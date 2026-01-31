@@ -1,0 +1,308 @@
+Wild Ticker - Developer Prompt
+
+Overview
+This file explains Wild Ticker
+for Claudia Haiku. It is a
+developer-ready prompt that
+teaches and prescribes the
+architecture, APIs, and files.
+
+High-level summary
+Wild Ticker shows a single
+line marquee with live
+headlines and ticker values.
+A transparent floating icon
+opens settings. A rectangular
+sticker sits above the ticker.
+Free users see the sticker and
+cannot click headlines. Paid
+users remove sticker and can
+click headlines to open links.
+
+Target platforms
+- Android (primary)
+- Kotlin + Jetpack Compose
+- Backend optional (for keys)
+
+Key capabilities
+- Overlay marquee always on
+  top of other apps.
+- Floating movable icon.
+- Settings panel for visuals.
+- Category filtering for:
+  Sports, Stocks, Crypto,
+  and News headlines.
+- In-app Paystack payment.
+
+Permissions & runtime
+- Request SYSTEM_ALERT_WINDOW
+  (Display over other apps)
+- Use a foreground service to
+  keep overlay alive.
+- Respect battery and memory.
+
+Recommended stack
+- Language: Kotlin (100%)
+- UI: Jetpack Compose (70%)
+- Background: WorkManager
+  + Foreground Service (90%)
+- Networking: Retrofit + OkHttp
+- Serialization: Kotlinx
+  Serialization / Moshi
+- Storage: Room DB (cache)
+- DI: Hilt (dependency)
+
+Why these choices
+Kotlin is the current standard
+for Android. Compose enables
+concise UIs and dynamic layout.
+WorkManager schedules periodic
+fetches in a battery-safe way.
+Room caches items to reduce
+API calls and make offline use.
+Hilt keeps components testable.
+
+App architecture
+Network -> Repository ->
+ViewModel -> Overlay UI
+
+Components list
+- OverlayService.kt
+- FloatingIconView.kt
+- SettingsActivity.kt
+- SettingsViewModel.kt
+- MarqueeView.kt
+- StickerView.kt
+- NewsRepository.kt
+- SportsRepository.kt
+- StockRepository.kt
+- CryptoRepository.kt
+- NetworkModule.kt
+- DatabaseModule.kt
+- PaymentModule.kt
+- App.kt (Application)
+
+For each file
+I explain purpose, design,
+limitations, and alternatives.
+
+`OverlayService.kt`
+What it does:
+Runs a foreground service that
+creates the overlay window and
+hosts the marquee and sticker.
+Why it exists:
+Android restricts apps from
+running UI over other apps
+without a service and perm.
+How it fits:
+It is the runtime container for
+all overlay UI elements.
+Internal structure:
+- Starts as foreground.
+- Inflates ComposeView wrapper.
+- Hosts Marquee and Sticker.
+Solves:
+Keeps UI visible and touch
+interactions routed correctly.
+Limitations:
+Some manufacturers kill
+background services. Needs
+battery-optim friendly design.
+Improvements:
+Use adaptive battery hints and
+restart strategies with backoff.
+Alternatives:
+- Accessibility overlay (40%)
+  Pros: more stable on some
+  devices. Cons: needs more
+  permissions and user trust.
+- System alert window (60%)
+  Pros: common. Cons: user must
+  enable setting manually.
+
+`FloatingIconView.kt`
+Purpose:
+Small draggable icon that sits
+above other windows. It opens
+settings when tapped.
+Why it exists:
+Provides quick access without
+needing the launcher.
+Internal:
+- Uses Motion events to drag.
+- Stores anchor preference.
+Limitations:
+Tap vs drag conflicts; use
+long-press to start drag.
+Improvements:
+Add auto-hide and snap-to-edge.
+Alternatives:
+- Persistent notification icon
+  (20%) Pros: simple. Cons:
+  less discoverable.
+
+`SettingsActivity.kt`
+Purpose:
+Full settings UI for visuals,
+categories, and account.
+Why:
+Users must control look and
+content of the ticker.
+Internal:
+- Compose screens with tabs.
+- Controls: sliders, toggles,
+  pickers for categories.
+Limitations:
+Complex UIs increase size.
+Improvements:
+Add remote config for defaults.
+Alternatives:
+- Fragment-based UI (30%)
+  Pros: older devices friendly.
+  Cons: more boilerplate.
+
+`MarqueeView.kt`
+Purpose:
+Single-line marquee rendering
+with smooth right-to-left scroll.
+Why:
+Primary UX element that shows
+aggregated headlines.
+Internal:
+- Uses Compose canvas and
+  measured text width.
+- Supports speed and alpha.
+- Clickable text for premium.
+Limitations:
+Large text or links may wrap.
+Improvements:
+Use virtualized queueing and
+pre-measure text for smoothness.
+Alternatives:
+- Native View marquee (40%)
+  Pros: simpler. Cons: less
+  control over animation.
+
+`StickerView.kt`
+Purpose:
+Displays logo and tagline.
+Small X triggers premium flow.
+Why:
+Branding and monetization.
+Internal:
+- Simple container with X.
+- Persist removal state on buy.
+Limitations:
+Sticker uses screen estate.
+Improvements:
+Allow user sizing and hiding.
+Alternatives:
+- No sticker for free users
+  (0%) Not viable—needed for
+  free tier restrictions.
+
+Repository files
+`NewsRepository.kt`
+- Encapsulates feed API calls.
+- Caches in Room.
+- Normalizes NewsItem model.
+Limitations:
+API rate limits; use backoff.
+Alternatives:
+- RSS scraping (20%)
+  Pros: free. Cons: unreliable.
+
+`SportsRepository.kt`
+- Connects to Sport API like
+  Sportmonks or GoalServe.
+- Prefer WebSockets where
+  available for live updates.
+Limitations:
+Cost for real time feeds.
+
+`StockRepository.kt`
+- Uses Finage or EODHD.
+- Normalizes tickers and prices.
+Notes:
+Use snapshot endpoints often.
+
+`CryptoRepository.kt`
+- Uses Coinfeeds or CoinGecko.
+- Include price + news endpoints.
+
+`NetworkModule.kt`
+- Provides Retrofit instances.
+- Adds interceptors for keys,
+  logging, and retry.
+Security:
+Store API keys in server
+or use encrypted storage.
+
+`DatabaseModule.kt`
+- Room entities: NewsItem,
+  ScoreItem, PriceItem.
+- DAOs for each model.
+
+`PaymentModule.kt`
+Why Paystack:
+You requested Paystack and
+bank transfer checkout.
+Integration:
+- Use Paystack Android SDK
+  for checkout UI.
+- Implement server webhook to
+  verify payments and issue
+  entitlement tokens.
+Flow:
+1. App requests server for
+   payment reference.
+2. Server returns reference.
+3. App opens Paystack UI.
+4. Server validates webhook.
+Security:
+Never trust client-only
+payment confirmations.
+
+Plans & entitlements
+Free:
+- Sticker visible
+- Marquee not clickable
+- Limited filters
+Premium:
+- Remove sticker
+- Clickable marquee
+- Advanced sorting
+Pricing:
+- Monthly: 120 Naira
+- Yearly: 840 Naira
+- Lifetime: 3600 Naira
+
+APIs recommended
+Sports: Sportmonks, GoalServe
+News: Feedrika or NewsAPI
+Crypto: Coinfeeds, CoinGecko
+Stocks: Finage, EODHD
+
+Rate limits & cadence
+- Sports: 30-90s
+- Crypto: 60-120s
+- Stocks: 30-120s
+- News: 1-5 min
+
+Dev notes & testing
+- Build instrumentation tests
+- Test overlay on multiple OEMs
+- Validate permission flows
+
+Possible future work
+- iOS port using SwiftUI
+- Server-side aggregation
+- Push notifications
+
+File export
+I saved this prompt file to
+your workspace. Ask to edit
+format or to convert to JSON.
+
+End of developer prompt
